@@ -1,104 +1,101 @@
-window.addEventListener('DOMContentLoaded', () => {
-  const videoSrc = window.innerWidth < 768 ? 'videos/mobile.mp4' : 'videos/desktop.mp4';
-  document.getElementById('video-source').src = videoSrc;
-  document.getElementById('bg-video').load();
-});
+const firebaseConfig = {
+  apiKey: "AIzaSyC83E0zz8J6TTlBFt9lN2l36holVgJMzt4",
+  authDomain: "revv-d414a.firebaseapp.com",
+  projectId: "revv-d414a",
+  storageBucket: "revv-d414a.appspot.com",
+  messagingSenderId: "45145521283",
+  appId: "1:45145521283:web:76796e9b1c31527dc66fb6",
+  measurementId: "G-2DJJENHFW3"
+};
 
-if (!localStorage.getItem('user')) {
-  localStorage.setItem('user', JSON.stringify({
-    id: 123456,
-    username: "testuser",
-    first_name: "Test",
-    photo_url: "https://via.placeholder.com/120"
-  }));
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let userName = null;
+let userAvatar = null;
+let userId = null;
+
+// Telegram WebApp auth
+if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user) {
+  const user = Telegram.WebApp.initDataUnsafe.user;
+  userName = user.username || user.first_name;
+  userAvatar = `https://t.me/i/userpic/320/${user.username}.jpg`;
+  userId = user.id;
+
+  document.getElementById("user-name").innerHTML = `<a href="https://t.me/${user.username}" target="_blank">@${userName}</a>`;
+  document.getElementById("user-avatar").src = userAvatar;
+} else {
+  alert("⚠️ Вход возможен только через Telegram WebApp. Зайдите через Telegram.");
 }
 
+// Показ отзывов
 function showReviews() {
-  const reviews = [
-    {
-      username: '@anime_fan123',
-      avatar: 'https://t.me/i/userpic/320/username.jpg',
-      message: 'Очень крутой сайт! Удобно и красиво :)'
-    },
-    {
-      username: '@test_user',
-      avatar: 'https://t.me/i/userpic/320/username2.jpg',
-      message: 'Оставил отзыв через Telegram — всё супер!'
-    }
-  ];
-
-  const container = document.getElementById('reviews');
-  container.innerHTML = '';
-  reviews.forEach(r => {
-    container.innerHTML += `
-      <div class="review">
-        <img src="${r.avatar}" alt="avatar" />
-        <div class="content">
-          <strong>${r.username}</strong><br/>
-          ${r.message}
-        </div>
-      </div>
-    `;
-  });
-  container.style.display = 'block';
-}
-
-function leaveReview() {
-  window.open('https://t.me/your_bot?start=leave_review', '_blank');
-}
-function onTelegramAuth(user) {
-  localStorage.setItem('user', JSON.stringify(user));
-  alert(`Привет, ${user.first_name}!`);
-}
-
-function sendReview(text) {
-  const user = JSON.parse(localStorage.getItem('user'));
-  const review = {
-    id: user.id,
-    username: '@' + user.username,
-    name: user.first_name,
-    avatar: user.photo_url,
-    text: text,
-    timestamp: Date.now(),
-    likes: 0
-  };
-  db.ref('reviews').push(review);
-}
-
-function loadReviews() {
-  const container = document.getElementById('reviews');
-  container.innerHTML = '';
-  db.ref('reviews').on('value', snapshot => {
-    const reviews = snapshot.val();
+  const container = document.getElementById("reviews-container");
+  container.innerHTML = "<p>Загрузка...</p>";
+  db.ref("reviews").once("value", (snapshot) => {
+    const data = snapshot.val();
+    container.innerHTML = "";
     let count = 0;
-    for (let key in reviews) {
-      count++;
-      const r = reviews[key];
-      container.innerHTML += `
-        <div class="review">
-          <img src="${r.avatar}" />
-          <div class="content">
-            <strong>${r.username}</strong><br/>
-            ${r.text}
-            <div class="likes">❤️ ${r.likes} <button onclick="likeReview('${key}')">+</button></div>
+    if (data) {
+      for (let key in data) {
+        const review = data[key];
+        const block = document.createElement("div");
+        block.classList.add("review-block");
+        block.innerHTML = `
+          <div class="review-header">
+            <img src="${review.avatar}" class="review-avatar">
+            <strong><a href="tg://user?id=${review.userId}" target="_blank">@${review.username}</a></strong>
           </div>
-        </div>
-      `;
+          <p>${review.text}</p>
+        `;
+        container.appendChild(block);
+        count++;
+      }
     }
-    document.getElementById('review-count').innerText = `Всего отзывов: ${count}`;
+    document.getElementById("review-count").innerText = `Всего отзывов: ${count}`;
   });
 }
 
-function likeReview(id) {
-  const ref = db.ref('reviews/' + id + '/likes');
-  ref.transaction(current => (current || 0) + 1);
+// Показ формы
+function openReviewForm() {
+  document.getElementById("review-form").style.display = "block";
 }
 
-function filterReviews() {
-  const searchValue = document.getElementById('search').value.toLowerCase();
-  const reviews = document.querySelectorAll('.review');
-  reviews.forEach(r => {
-    const text = r.innerText.toLowerCase();
-    r.style.display = text.includes(searchValue) ? 'flex' : 'none';
+// Отправка отзыва
+function submitReview() {
+  const text = document.getElementById("review-input").value.trim();
+  if (!userName || !userId) {
+    alert("⚠️ Не удалось определить пользователя. Зайдите через Telegram WebApp.");
+    return;
+  }
+  if (text.length < 3) {
+    alert("❗ Отзыв слишком короткий.");
+    return;
+  }
+
+  const newReview = {
+    username: userName,
+    avatar: userAvatar,
+    userId: userId,
+    text: text
+  };
+
+  db.ref("reviews").push(newReview, (error) => {
+    if (error) {
+      alert("❌ Ошибка при отправке отзыва. Попробуйте позже.");
+    } else {
+      alert("✅ Отзыв отправлен!");
+      document.getElementById("review-input").value = "";
+      showReviews();
+    }
   });
 }
+
+// Адаптивный фон
+const videoSrc = document.getElementById('video-source');
+if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+  videoSrc.src = 'videos/mobile.mp4';
+} else {
+  videoSrc.src = 'videos/desktop.mp4';
+}
+document.getElementById('bg-video').load();
