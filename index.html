@@ -1,40 +1,53 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Отзывы</title>
-  <link rel="stylesheet" href="style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC83E0zz8J6TTlBFt9lN2l36holVgJMzt4",
+      authDomain: "revv-d414a.firebaseapp.com",
+      databaseURL: "https://reeec.firebaseio.com",
+      projectId: "revv-d414a",
+      storageBucket: "revv-d414a.firebasestorage.app",
+      messagingSenderId: "45145521283",
+      appId: "1:45145521283:web:76796e9b1c31527dc66fb6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
 </head>
 <body>
   <video autoplay muted loop id="bg-video">
-    <source src="videos/desktop.mp4" type="video/mp4" id="video-source">
+    <source src="" type="video/mp4" id="video-source">
   </video>
+  
 
-  <div class="overlay">
-    <img src="image.png" alt="User Avatar" class="user-avatar" id="user-avatar">
-    <div class="username" id="user-name">Гость</div>
-    
+  <div class="main-block">
+    <img src="image.png" class="user-avatar" alt="User Avatar">
+    <h1 class="title">Отзывы</h1>
     <div class="button-group">
-      <button onclick="showReviews()">📖 Смотреть отзывы</button>
-      <button onclick="openReviewForm()">✍️ Оставить отзыв</button>
+      <button onclick="loadReviews()">📖 Смотреть отзывы</button>
+      <button onclick="leaveReview()">✍️ Оставить отзыв</button>
     </div>
-
-    <input type="text" id="search" placeholder="🔍 Поиск по отзывам...">
-
-    <div id="reviews-container"></div>
-
-    <div id="review-form" style="display:none;">
-      <textarea id="review-input" placeholder="Ваш отзыв..."></textarea>
-      <button onclick="submitReview()">🚀 Отправить</button>
-    </div>
-
+    <input type="text" id="search" placeholder="Поиск по отзывам" oninput="filterReviews()" />
     <div id="review-count"></div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <div class="reviews-container" id="reviews"></div>
+
+  <script async src="https://telegram.org/js/telegram-widget.js?7"
+          data-telegram-login="@logg_robot"
+          data-size="large"
+          data-radius="10"
+          data-userpic="true"
+          data-request-access="write"
+          data-on-auth="onTelegramAuth">
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
